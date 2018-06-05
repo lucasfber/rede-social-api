@@ -1,80 +1,83 @@
-const postController = require('./post');
+const postController = require("./post");
+const Usuario = require("../models/usuario");
+const Post = require("../models/post");
 
-const usuarios = [
-    {id: 1, nome: 'Lucas', email: 'lucas.bertoldo@gmail.com', senha: '12345'},
-    {id: 2, nome: 'Maria', email: 'mariasilva@gmail.com', senha: 'abcde'},
-    {id: 3, nome: 'Ze', email: 'zealves@gmail.com', senha: 'abc123'}
-];
-
-module.exports.listaUsuarios = function(req, res) {
-    res.json(usuarios); 
+module.exports.getUsuarios = function(req, res) {
+  if (req.query.email) {
+    Usuario.find({ email: req.query.email})
+        .then(u => res.status(200).json(u))
+        .catch(err => res.status(500).send());
+  } else if (req.query.nome) {
+    Usuario.find({nome: new RegExp('' + req.query.nome + '', "i")})
+        .then(u => res.status(200).json(u))
+        .catch(err => res.status(500).send());
+  }
+  else {
+    Usuario.find()
+      .then(data => res.status(200).json(data))
+      .catch(err => res.status(500).send(err));
+  }
 };
 
-module.exports.obterUsuario = function(req, res) {
-    let id = req.params.id;
-    let usuario = usuarios.find(u => (u.id == id));
+module.exports.getUsuarioPorId = function(req, res) {
+  let id = req.params.id;
 
-    //let usuario = usuarios.find(u => (u.id == id));
-     /* se usado o === dar erro*/
-    console.log(usuario);
-    if(usuario) {
-        res.json(usuario);
-    }
-
-    else {
-        res.status(404).send('Usuario nao encontrado');
-    }
+  if (id) {
+    Usuario.findById(id)
+      .then(u => res.status(200).json(u))
+      .catch(err => res.status(500).send());
+  } else {
+    res.status(500).send();
+  }
 };
 
-module.exports.obterPostsDeUsuario = function(req, res) {
-    let userId = req.params.id;
-    let userPosts = [];
-    console.log(userId);
-    userPosts = postController.getPostsPorUsuario(userId);
-    res.json(userPosts);
-}
+module.exports.getPostsByUsuarioId = function(req, res) {
+  let id = req.params.id;
+  if (id) {
+    Usuario.findById(id).then(u => {
+      Post.find({ uid: u._id })
+        .then(p => res.status(200).json(p))
+        .catch(err => res.send(err));
+    });
+  } else res.status(500).send();
+};
 
 module.exports.criaUsuario = function(req, res) {
-    let usuario = req.body;
-    if(usuario) {
-        usuarios.push(usuario);
-        res.status(201).send({ "ok": "Usuário criado com sucesso!"});
-    }
-    else {
-        res.status(400).send({ "error": "Formato de dados enviados não suportado"});
-    }
+  let usuario = req.body;
+
+  if (usuario) {
+    Usuario.create(req.body)
+      .then(data => res.status(201).json(usuario))
+      .catch(err => res.status(500).send(err));
+  } else {
+    res.status(500).send();
+  }
 };
 
 module.exports.atualizaUsuario = function(req, res) {
-    let novoUsuario = req.body;
-    let id = req.params.id;
-    let usuario = usuarios.find((u) => (u.id == id));
+  let novoUsuario = req.body;
+  let id = req.params.id;
 
-    if(usuario) {
-        let index = usuarios.indexOf(usuario);
-        usuarios.splice(index, 1, novoUsuario);
-        res.status(200).send({ "ok" : "Usuario atualizado com sucesso!"});
+  if (id) {
+    if (novoUsuario) {
+      Usuario.findByIdAndUpdate(id, novoUsuario, { new: true })
+        .then(u => res.status(201).json(u))
+        .catch(u => res.status(404).send());
+    } else {
+      res.status(500).send();
     }
-
-    else {
-        res.status(404).send({ "error": "Usuario nao encontrado!" })
-    }
-}
+  } else {
+    res.status(500).send();
+  }
+};
 
 module.exports.deletaUsuario = function(req, res) {
-    let id = req.params.id;
-    let usuario = usuarios.find(u => (u.id == id));
-
-    if(usuario) {
-        let usuarioIndex = usuarios.indexOf(usuario);
-        usuarios.splice(usuarioIndex, 1);
-        res.status(200).send({ "ok" : "Usuario deletado com sucesso!"});
-    }
-    else {
-        res.status(404).send({ "error": "Usuario nao encontrado!"});
-    }
-}
-
-module.exports.getUsuarioDePost = function(id){
-    return usuarios.find(u => (u.id == id));
-}
+  let id = req.params.id;
+  if (id) {
+    Usuario.findByIdAndRemove(id)
+      .then(u => res.status(200).json(u))
+      .catch(err => res.status(500).send(err));
+  } else {
+    res.status(404).send();
+  }
+};
