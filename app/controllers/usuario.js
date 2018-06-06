@@ -92,9 +92,3 @@ module.exports.deletaUsuario = function(req, res) {
     .catch(err => res.status(500).send(err));
 };
 
-module.exports.signIn = function(req, res) {
-  let u = {
-    email: req.body.email,
-    senha: req.body.senha
-  };
-};
